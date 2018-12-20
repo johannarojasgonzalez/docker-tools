@@ -18,7 +18,7 @@ RUN apt-get install -y python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev li
 RUN apt-get install -y libx11-dev libatlas-base-dev
 RUN apt-get install -y libgtk-3-dev libboost-python-dev
 RUN apt-get install -y libopenblas-dev liblapack-dev
-
+RUN apt-get install -y cmake-curses-gui
 
 #get dlib
 ARG DLIB_VERSION='19.16'
@@ -35,7 +35,7 @@ RUN cd /root/ && \
     cmake --build . --config Release && \
     make install && \
     ldconfig
-
+RUN ln -s /root/dlib-${DLIB_VERSION} dlib
 
 
 # get openCV
