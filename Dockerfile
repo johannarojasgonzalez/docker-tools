@@ -1,12 +1,11 @@
 FROM ubuntu:16.04
 
 # First: get all the dependencies:
-#
-RUN apt-get update
+
+RUN  apt-get update
 # wget, unzip
-RUN apt-get install -y wget \
-    unzip \
-    apt-file
+RUN apt-get install -y wget unzip apt-file
+
 # install opencv dependencies
 # compiler
 RUN apt-get install -y build-essential
@@ -39,7 +38,7 @@ RUN ln -s /root/dlib-${DLIB_VERSION} dlib
 
 
 # get openCV
-ARG OPENCV_VERSION='3.4.3'
+ARG OPENCV_VERSION='4.1.0'
 RUN cd /root/ && \
     wget https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.zip && \
     unzip ${OPENCV_VERSION}.zip && \
@@ -50,15 +49,33 @@ RUN cd /root/ && \
     echo CMAKE && \
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
     echo MAKEJ8 && \
-    make -j8 && \
+    make -j4 && \
     echo MAKEINSTALL && \
     make install
 
-RUN apt-file update
+#RUN apt-file update
 
 #get and install gitlabrunnner
-RUN apt-get install curl
-RUN curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash
-RUN apt-get install gitlab-runner
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y ca-certificates wget apt-transport-https vim nano && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["/bin/sh"]
+RUN echo "deb https://packages.gitlab.com/runner/gitlab-ci-multi-runner/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/runner_gitlab-ci-multi-runner.list && \
+    wget -q -O - https://packages.gitlab.com/gpg.key | apt-key add - && \
+    apt-get update -y && \
+    apt-get install -y gitlab-ci-multi-runner && \
+    wget -q https://github.com/docker/machine/releases/download/v0.7.0/docker-machine-Linux-x86_64 -O /usr/bin/docker-machine && \
+    chmod +x /usr/bin/docker-machine && \
+    apt-get clean && \
+    mkdir -p /etc/gitlab-runner/certs && \
+    chmod -R 700 /etc/gitlab-runner && \
+    rm -rf /var/lib/apt/lists/*
+
+ADD entrypoint /
+RUN chmod +x /entrypoint
+
+VOLUME ["/etc/gitlab-runner", "/home/gitlab-runner"]
+ENTRYPOINT ["/usr/bin/dumb-init", "/entrypoint"]
+CMD ["run", "--user=gitlab-runner", "--working-directory=/home/gitlab-runner"
